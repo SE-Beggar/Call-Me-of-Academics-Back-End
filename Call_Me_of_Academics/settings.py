@@ -92,7 +92,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'CMA',
         'USER': 'root',
-        'PASSWORD': '',
+        'PASSWORD': 'zxcvbnwty312424',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
@@ -182,7 +182,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'# 发送邮件配�
 EMAIL_HOST = 'smtp.qq.com'# 服务器名称
 EMAIL_PORT = 25# 服务端口
 EMAIL_HOST_USER = '1030519668@qq.com' # 填写自己邮箱
-EMAIL_HOST_PASSWORD = ''# 在邮箱中设置的客户端授权密码
+EMAIL_HOST_PASSWORD = 'yswjiyxmdxcfbfed'# 在邮箱中设置的客户端授权密码
 EMAIL_FROM = 'CMA'# 收件人看到的发件人
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 EMAIL_USE_TLS = True   #是否使用TLS安全传输协议
