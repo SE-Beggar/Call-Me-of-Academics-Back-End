@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django_elasticsearch_dsl',
     'django_elasticsearch_dsl_drf',
     'user',
+    'paper'
 ]
 
 MIDDLEWARE = [
@@ -92,7 +93,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'CMA',
         'USER': 'root',
-        'PASSWORD': '',
+        'PASSWORD': 'jyy13575305668',
         'HOST': '127.0.0.1',
         'PORT': '3306',
     }
