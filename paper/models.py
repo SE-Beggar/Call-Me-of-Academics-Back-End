@@ -14,6 +14,8 @@ class Author(models.Model):
 
 class Venue(models.Model):
     id = models.CharField(max_length=25, primary_key=True)
+    DisplayName = models.CharField(max_length=50, default='')
+    NormalizedName = models.CharField(max_length=50, default='')
 
 
 class Keyword(models.Model):

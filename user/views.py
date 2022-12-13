@@ -2,9 +2,11 @@ from django.contrib.auth.hashers import make_password, check_password
 from django.core.mail import send_mail
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from user.models import User
+from paper.documents import AuthorDocument
+from user.models import User, Application
 
 
 # Create your views here.
@@ -96,6 +98,66 @@ class InfoView(APIView):
             user.description = request.POST.get('description')
         if request.POST.get('sex'):
             user.sex = request.POST.get('sex')
+        if request.POST.get('password', None):
+            user.password = make_password(request.POST.get('password', None))
         user.save()
         return JsonResponse({'errno': 0, 'msg': "更改个人信息成功"})
+
+
+class ApplicationView(APIView):
+    def post(self, request):
+        user = User.objects.get(email=request.session.get('email'))
+        description = request.data.get('description', None)
+        author_id = request.data.get('id', None)
+        attachment = request.FILES.get('file', None)
+        application = Application()
+        application.user = user
+        if description:
+            application.description = description
+        if author_id:
+            if User.objects.filter(author_id=author_id).exists():
+                return Response({'errno': 1})
+            application.author_id = author_id
+            search = AuthorDocument.search().filter('term', id=author_id)
+            response = search.execute()
+            print(response)
+            application.author_name = response.hits[0].name
+        if attachment:
+            application.attachment = attachment
+        application.save()
+        return Response({'errno': 0})
+
+
+class IdentifyView(APIView):
+    def get(self, request):
+        lists = [
+            {
+                'id': item.pk,
+                'email': item.user.email,
+                'scholarid': item.author_id,
+                'username': item.user.username,
+                'scholarname': item.author_name,
+                'description': item.description,
+                'url': 'http://127.0.0.1/api/' + str(item.attachment)
+            } for item in Application.objects.all()
+        ]
+        return Response({'errno': 0, 'lists': lists})
+
+    def post(self, request):
+        application_id = request.data.get('listid')
+        op = request.data.get('op')
+        if op:
+            application = Application.objects.get(pk=application_id)
+            application.delete()
+        else:
+            application = Application.objects.get(pk=application_id)
+            user = User.objects.get(email=application.user.email)
+            user.author_id = application.author_id
+            user.save()
+            application.delete()
+        return Response({'errno': 0})
+
+
+
+
 

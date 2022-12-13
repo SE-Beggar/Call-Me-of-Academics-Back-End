@@ -7,4 +7,5 @@ urlpatterns = [
     path('login/', login),
     path('logout/', logout),
     path('userspace/', csrf_exempt(InfoView.as_view())),
+    path('identify/', ApplicationView.as_view())
 ]

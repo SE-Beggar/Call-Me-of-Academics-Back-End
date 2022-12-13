@@ -16,8 +16,14 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+import paper.views
+import user.views
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
     path('user/', include(('user.urls', 'user'))),
     path('paper/', include(('paper.urls', 'paper'))),
+    path('collection/search/', paper.views.VenueSearchView.as_view()),
+    path('collection/list/', paper.views.VenueDetailView.as_view()),
+    path('admin/identify/', user.views.IdentifyView.as_view()),
 ]

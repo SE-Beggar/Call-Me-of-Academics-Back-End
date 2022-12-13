@@ -1,29 +1,26 @@
 from django.http import JsonResponse
-from django.shortcuts import render
-from django_elasticsearch_dsl_drf.filter_backends import DefaultOrderingFilterBackend, FacetedSearchFilterBackend, \
-    FilteringFilterBackend, SearchFilterBackend, SuggesterFilterBackend
-from django_elasticsearch_dsl_drf.viewsets import DocumentViewSet
+
 from elasticsearch_dsl import Q
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from paper.documents import PaperDocument, AuthorDocument
-from paper.serializers import PaperSerializer, AuthorSerializer
+from paper.documents import PaperDocument, AuthorDocument, VenueDocument
+from paper.serializers import PaperSerializer, AuthorSerializer, VenueSerializer, VenueDetailSerializer
 
 
 # Create your views here.
-def get_paper_detail(request):
-    if request.method == 'GET':
-        paper_id = request.GET.get('paperid')
-        search = PaperDocument.search(index='paper').query("match", id=paper_id)
+class PaperDetailView(APIView):
+    def get(self, request):
+        paper_id = request.query_params.get('paperid')
+        search = PaperDocument.search(index='paper').filter("term", id=paper_id)
         response = search.execute()
-        return JsonResponse(PaperSerializer(instance=response.hits[0]).data)
+        return JsonResponse({'errno': 0, 'paper': PaperSerializer(instance=response.hits[0]).data})
 
 
 class SearchPaperView(APIView):
     def post(self, request):
         data = request.data
-        q = Q('multi_match', query=data['title'],
+        q = Q('multi_match', query=data['content'],
               fields=[
                   'title',
                   'authors.name',
@@ -42,7 +39,7 @@ class SearchPaperView(APIView):
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = PaperSerializer(instance=response.hits, many=True)
-        return Response(serializer.data)
+        return Response({'errno': 0,'papers': serializer.data})
 
 
 class SearchAuthorView(APIView):
@@ -58,7 +55,106 @@ class SearchAuthorView(APIView):
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = AuthorSerializer(instance=response.hits, many=True)
-        return Response(serializer.data)
+        return Response({'errno': 0,'scholars': serializer.data})
+
+
+class AdvancedSearchView(APIView):
+    def post(self, request):
+        content = request.data['advancecontent']
+        must = []
+        should = []
+        for item in content:
+            if item['logic']:
+                if item['entry'] == 0:
+                    should.append(Q('match', title=item['input']))
+                elif item['entry'] == 1:
+                    should.append(Q('match', abstract=item['input']))
+                elif item['entry'] == 2:
+                    should.append(Q('match', **{'author.name': item['input']}))
+                elif item['entry'] == 3:
+                    should.append(Q('match', **{'venue.raw': item['input']}))
+            else:
+                if item['entry'] == 0:
+                    should.append(Q('match', title=item['input']))
+                elif item['entry'] == 1:
+                    should.append(Q('match', abstract=item['input']))
+                elif item['entry'] == 2:
+                    should.append(Q('match', **{'author.name': item['input']}))
+                elif item['entry'] == 3:
+                    should.append(Q('match', **{'venue.raw': item['input']}))
+            search = PaperDocument.search().query('bool', must=must, should=should)
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = PaperSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0,'papers': serializer.data})
+
+
+class AuthorDetailView(APIView):
+    def post(self, request):
+        author_id = request.data.get('id')
+        search = AuthorDocument.search().filter('term', id=author_id)
+        response = search.execute()
+
+        print(response.hits)
+        return Response({'errno': 0, 'scholar': AuthorSerializer(instance=response.hits[0]).data})
+
+
+class AuthorRelationshipView(APIView):
+    def post(self, request):
+        author_id = request.data.get('id')
+        search = AuthorDocument.search().filter('term', id=author_id)
+        response = search.execute()
+        author = response.hits[0]
+        pub_id_list = [
+            pub['i'] for pub in author.pubs
+        ]
+        search = PaperDocument.search().filter('terms', id=pub_id_list)
+        print(pub_id_list)
+        ret = []
+        for paper_doc in search:
+            for author in paper_doc.authors:
+                author_dict = {
+                    'id': author['id'],
+                    'name': author['name']
+                }
+                ret .append(author_dict)
+        ret = [dict(t) for t in set([tuple(d.items()) for d in ret])]
+        return Response({'errno': 0, 'scholars': ret})
+
+
+class VenueSearchView(APIView):
+    def post(self, request):
+        venue_name = request.data.get('name')
+        q = Q('multi_match', query=venue_name, fields=['DisplayName', 'NormalizedName'])
+        search = VenueDocument.search().query(q)
+        response = search.execute()
+        print('HitNum:', len(response.hits))
+        serializer = VenueSerializer(instance=response.hits, many=True)
+        return Response({'errno': 0, 'venues': serializer.data})
+
+
+class VenueDetailView(APIView):
+    def get(self, request):
+        venue_id = request.query_params.get('id')
+        search = VenueDocument.search().filter('term', id=venue_id)
+        response = search.execute()
+        return Response({'errno': 0, 'venue': VenueDetailSerializer(instance=response.hits[0]).data})
+
+
+class PaperSuggestionsView(APIView):
+    def post(self, request):
+        input = request.data.get('input')
+        if input:
+            print(input)
+            search = PaperDocument.search().suggest('suggest', input, term={'field': 'title.suggest'})
+            response = search.execute()
+            options = response.suggest['suggest'][0]['options']
+            text_list = [
+                item['text'] for item in options
+            ]
+            return Response({'errno': 0, 'list': text_list})
+
+
 
 
 # class PaperViewSet(DocumentViewSet):
