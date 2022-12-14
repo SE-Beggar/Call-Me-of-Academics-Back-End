@@ -60,7 +60,8 @@ def login(request):
             if check_password(password, user.password):
                 request.session['email'] = email
                 request.session['username'] = user.username
-                return JsonResponse({'errno': 0, 'msg': "登录成功", 'username': user.username, 'email': email})
+                request.session['sex'] = user.sex
+                return JsonResponse({'errno': 0, 'msg': "登录成功", 'username': user.username, 'email': email, 'sex': user.sex})
             else:
                 return JsonResponse({'errno': 1001, 'msg': "密码错误"})
         else:
@@ -96,6 +97,7 @@ class FindBackView(APIView):
             password = make_password(password)
             if code == request.session.get('code'):
                 user.password=password
+                user.save()
                 return JsonResponse({'errno': 0, 'msg': "修改成功"})
             else:
                 return JsonResponse({'errno': 1, 'msg': "验证码不正确"})
@@ -133,21 +135,23 @@ class InfoView(APIView):
     def post(self, request):
         email = request.session.get('email')
         user = User.objects.get(email=email)
-        if request.POST.get('username'):
-            user.username = request.POST.get('username')
-        if request.POST.get('description'):
-            user.description = request.POST.get('description')
-        if request.POST.get('sex'):
-            user.sex = request.POST.get('sex')
-        if request.POST.get('password', None):
-            user.password = make_password(request.POST.get('password', None))
+        print(request.data.get('user[username]'))
+        if request.data.get('user[username]'):
+            user.username = request.data.get('user[username]')
+        if request.data.get('user[description]'):
+            user.description = request.data.get('user[description]')
+        if request.data.get('user[sex]'):
+            user.sex = request.data.get('user[sex]')
+        if request.data.get('user[password]', None):
+            user.password = make_password(request.data.get('user[password]', None))
         user.save()
         return JsonResponse({'errno': 0, 'msg': "更改个人信息成功"})
 
 
 class ApplicationView(APIView):
     def post(self, request):
-        user = User.objects.get(email=request.session.get('email'))
+        email = request.data.get('email')
+        user = User.objects.get(email=email)
         description = request.data.get('description', None)
         author_id = request.data.get('id', None)
         attachment = request.FILES.get('file', None)
@@ -179,7 +183,7 @@ class IdentifyView(APIView):
                 'username': item.user.username,
                 'scholarname': item.author_name,
                 'description': item.description,
-                'url': 'http://127.0.0.1:8000/' + str(item.attachment)
+                'url': 'http://127.0.0.1:8000/' + 'media/'+ str(item.attachment)
             } for item in Application.objects.all()
         ]
         return Response({'errno': 0, 'lists': lists})
