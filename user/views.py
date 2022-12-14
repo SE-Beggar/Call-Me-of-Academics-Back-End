@@ -159,7 +159,7 @@ class ApplicationView(APIView):
             if User.objects.filter(author_id=author_id).exists():
                 return Response({'errno': 1})
             application.author_id = author_id
-            search = AuthorDocument.search().filter('term', id=author_id)
+            search = AuthorDocument.search()[0:500].filter('term', id=author_id)
             response = search.execute()
             print(response)
             application.author_name = response.hits[0].name

@@ -91,7 +91,7 @@ class AuthorSerializer(DocumentSerializer):
         ret = []
         for item in obj.pubs:
             print(item['i'])
-            search = PaperDocument.search().filter('term', id=item['i'])
+            search = PaperDocument.search()[0:500].filter('term', id=item['i'])
             response = search.execute()
             dict = item.to_dict()
             dict['r'] += 1
@@ -104,7 +104,7 @@ class AuthorSerializer(DocumentSerializer):
     def get_n_download(self, obj):
         num = 0
         for item in obj.pubs:
-            search = PaperDocument.search().filter('term', id=item['i'])
+            search = PaperDocument.search()[0:500].filter('term', id=item['i'])
             response = search.execute()
             print(response.hits)
             if response.hits:
@@ -136,7 +136,7 @@ class VenueDetailSerializer(DocumentSerializer):
 
     def get_papers(self, obj):
         q = Q('nested', path='venue', query=Q('term', **{'venue.id': obj.id}))
-        search = PaperDocument.search().query(q)
+        search = PaperDocument.search()[0:500].query(q)
         response = search.execute()
         return PubSerializer(instance=response.hits, many=True).data
     class Meta:

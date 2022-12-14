@@ -5,14 +5,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from paper.documents import PaperDocument, AuthorDocument, VenueDocument
-from paper.serializers import PaperSerializer, AuthorSerializer, VenueSerializer, VenueDetailSerializer
+from paper.serializers import PaperSerializer, AuthorSerializer, VenueSerializer, VenueDetailSerializer, PubSerializer
+
+
+class IndexView(APIView):
+    def get(self, request):
+        search = PaperDocument.search()[0:500].query('match_all').sort('-n_citation')
+        response = search.execute()
+        return Response({'errno': 0, 'papers': PubSerializer(instance=response.hits, many=True).data})
 
 
 # Create your views here.
 class PaperDetailView(APIView):
     def get(self, request):
         paper_id = request.query_params.get('paperid')
-        search = PaperDocument.search(index='paper').filter("term", id=paper_id)
+        search = PaperDocument.search()[0:500].filter("term", id=paper_id)
         response = search.execute()
         return JsonResponse({'errno': 0, 'paper': PaperSerializer(instance=response.hits[0]).data})
 
@@ -31,7 +38,7 @@ class SearchPaperView(APIView):
               ])
         type_selected = data.get('typeSelected', None)
         year_selected = data.get('yearSelected', None)
-        search = PaperDocument.search(index='paper').query(q)
+        search = PaperDocument.search(index='paper')[0:100].query(q)
         if type_selected:
             search = search.filter('terms', doc_type=type_selected)
         if year_selected:
@@ -51,7 +58,7 @@ class SearchAuthorView(APIView):
                   'orgs',
                   'tags.t'
               ])
-        search = AuthorDocument.search(index='author').query(q)
+        search = AuthorDocument.search()[0:500].query(q)
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = AuthorSerializer(instance=response.hits, many=True)
@@ -82,7 +89,7 @@ class AdvancedSearchView(APIView):
                     should.append(Q('match', **{'author.name': item['input']}))
                 elif item['entry'] == 3:
                     should.append(Q('match', **{'venue.raw': item['input']}))
-            search = PaperDocument.search().query('bool', must=must, should=should)
+            search = PaperDocument.search()[0:500].query('bool', must=must, should=should)
             response = search.execute()
             print('HitNum:', len(response.hits))
             serializer = PaperSerializer(instance=response.hits, many=True)
@@ -92,7 +99,7 @@ class AdvancedSearchView(APIView):
 class AuthorDetailView(APIView):
     def post(self, request):
         author_id = request.data.get('id')
-        search = AuthorDocument.search().filter('term', id=author_id)
+        search = AuthorDocument.search()[0:500].filter('term', id=author_id)
         response = search.execute()
 
         print(response.hits)
@@ -102,13 +109,13 @@ class AuthorDetailView(APIView):
 class AuthorRelationshipView(APIView):
     def post(self, request):
         author_id = request.data.get('id')
-        search = AuthorDocument.search().filter('term', id=author_id)
+        search = AuthorDocument.search()[0:500].filter('term', id=author_id)
         response = search.execute()
         author = response.hits[0]
         pub_id_list = [
             pub['i'] for pub in author.pubs
         ]
-        search = PaperDocument.search().filter('terms', id=pub_id_list)
+        search = PaperDocument.search()[0:500].filter('terms', id=pub_id_list)
         print(pub_id_list)
         ret = []
         for paper_doc in search:
@@ -126,7 +133,7 @@ class VenueSearchView(APIView):
     def post(self, request):
         venue_name = request.data.get('name')
         q = Q('multi_match', query=venue_name, fields=['DisplayName', 'NormalizedName'])
-        search = VenueDocument.search().query(q)
+        search = VenueDocument.search()[0:500].query(q)
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = VenueSerializer(instance=response.hits, many=True)
@@ -136,7 +143,7 @@ class VenueSearchView(APIView):
 class VenueDetailView(APIView):
     def get(self, request):
         venue_id = request.query_params.get('id')
-        search = VenueDocument.search().filter('term', id=venue_id)
+        search = VenueDocument.search()[0:500].filter('term', id=venue_id)
         response = search.execute()
         return Response({'errno': 0, 'venue': VenueDetailSerializer(instance=response.hits[0]).data})
 
@@ -146,7 +153,7 @@ class PaperSuggestionsView(APIView):
         input = request.data.get('input')
         if input:
             print(input)
-            search = PaperDocument.search().suggest('suggest', input, term={'field': 'title.suggest'})
+            search = PaperDocument.search()[0:500].suggest('suggest', input, term={'field': 'title.suggest'})
             response = search.execute()
             options = response.suggest['suggest'][0]['options']
             text_list = [
