@@ -28,19 +28,21 @@ class PaperDetailView(APIView):
 class SearchPaperView(APIView):
     def post(self, request):
         data = request.data
+        print(data)
         if data['title']:
             q = Q('multi_match', query=data['title'],
                   fields=[
                       'title',
-                      'authors.name',
-                      'venue.raw',
-                      'publisher',
-                      'abstract',
-                      'keywords'
+                      # 'authors.name',
+                      # 'venue.raw',
+                      # 'publisher',
+                      # 'abstract',
+                      # 'keywords'
                   ])
-            lang_selected = data.get('langSelected', None)
-            year_selected = data.get('yearSelected', None)
-            search = PaperDocument.search(index='paper')[0:500].query(q)
+            lang_selected = data.get('langSelected[0]', None)
+            year_selected = data.get('yearSelected[0]', None)
+            print(lang_selected,year_selected)
+            search = PaperDocument.search(index='paper')[0:500].query(q).sort("-n_citation")
             if lang_selected:
                 search = search.filter('term', lang=lang_selected)
             if year_selected:
@@ -78,10 +80,10 @@ class SearchAuthorView(APIView):
             q = Q('multi_match', query=data['scholar'],
                   fields=[
                       'name',
-                      'orgs',
-                      'tags.t'
+                      # 'orgs',
+                      # 'tags.t'
                   ])
-            search = AuthorDocument.search()[0:100].query(q)
+            search = AuthorDocument.search()[0:100].query(q).sort('-h_index')
             response = search.execute()
             print('HitNum:', len(response.hits))
             serializer = AuthorSearchSerializer(instance=response.hits, many=True)

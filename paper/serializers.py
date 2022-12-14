@@ -82,16 +82,16 @@ class AuthorSerializer(DocumentSerializer):
     tags = serializers.ObjectField(required=False)
     from rest_framework import serializers
     pubs = serializers.SerializerMethodField()
-    n_download = serializers.SerializerMethodField()
+    #n_download = serializers.SerializerMethodField()
     isidentify = serializers.SerializerMethodField()
 
     def get_pubs(self, obj):
         # print('get_pubs')
         #print(obj.pubs)
         ret = []
-        for item in obj.pubs:
+        for item in obj.pubs[0:20]:
             #print(item['i'])
-            search = PaperDocument.search().filter('term', id=item['i'])
+            search = PaperDocument.search()[0:10].filter('term', id=item['i'])
             response = search.execute()
             dict = item.to_dict()
             dict['r'] += 1
@@ -104,7 +104,7 @@ class AuthorSerializer(DocumentSerializer):
     def get_n_download(self, obj):
         num = 0
         for item in obj.pubs:
-            search = PaperDocument.search().filter('term', id=item['i'])
+            search = PaperDocument.search()[0:10].filter('term', id=item['i'])
             response = search.execute()
             #print(response.hits)
             if response.hits:
