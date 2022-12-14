@@ -12,7 +12,6 @@ class PaperSerializer(DocumentSerializer):
     year = serializers.IntegerField(required=False)
     keywords = serializers.CharField(required=False)
     n_citation = serializers.IntegerField(required=False)
-    n_download = serializers.IntegerField(default=0)
     page_start = serializers.CharField(required=False)
     page_end = serializers.CharField(required=False)
     doc_type = serializers.CharField(required=False)
@@ -26,6 +25,14 @@ class PaperSerializer(DocumentSerializer):
     pdf = serializers.CharField(required=False)
     url = serializers.CharField(required=False)
     abstract = serializers.CharField(required=False)
+    from rest_framework import serializers
+    n_download = serializers.SerializerMethodField()
+
+    def get_n_download(self, obj):
+        if not obj.n_download:
+            return 0
+        else:
+            return obj.n_download
 
     class Meta:
         document = PaperDocument
@@ -76,7 +83,7 @@ class AuthorSerializer(DocumentSerializer):
     from rest_framework import serializers
     pubs = serializers.SerializerMethodField()
     n_download = serializers.SerializerMethodField()
-    identified = serializers.SerializerMethodField()
+    isidentify = serializers.SerializerMethodField()
 
     def get_pubs(self, obj):
         # print('get_pubs')
@@ -87,6 +94,7 @@ class AuthorSerializer(DocumentSerializer):
             search = PaperDocument.search().filter('term', id=item['i'])
             response = search.execute()
             dict = item.to_dict()
+            dict['r'] += 1
             print(response.hits)
             if response.hits:
                 dict.update(PubSerializer(instance=response.hits[0]).data)
@@ -105,7 +113,7 @@ class AuthorSerializer(DocumentSerializer):
                         num += paper.n_download
         return num
 
-    def get_identified(self, obj):
+    def get_isidentify(self, obj):
         if User.objects.filter(author_id=obj.id):
             return 1
         else:

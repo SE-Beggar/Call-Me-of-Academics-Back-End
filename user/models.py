@@ -12,7 +12,7 @@ class User(models.Model):
 
 
 def application_path(instance, filename):
-    return 'attachment/user_{0}/{1}'.format(instance.user.email, filename)
+    return 'user_{0}/{1}'.format(instance.user.email, filename)
 
 
 class Application(models.Model):

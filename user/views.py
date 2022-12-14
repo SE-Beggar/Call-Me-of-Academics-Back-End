@@ -27,13 +27,10 @@ class RegisterView(APIView):
         email = request.POST.get('email')
         code = request.POST.get('code')
         username = request.POST.get('username')
-        password_1 = request.POST.get('password_1')
-        password_2 = request.POST.get('password_2')
+        password = request.POST.get('password')
         if code != request.session.get('code'):
             return JsonResponse({'errno': 1002})
-        if password_1 != password_2:
-            return JsonResponse({'errno': 1003})
-        password = make_password(password_1)
+        password = make_password(password)
         User.objects.create(email=email, username=username, password=password)
         return JsonResponse({'errno': 0})
 
@@ -87,7 +84,7 @@ class InfoView(APIView):
             'description': user.description,
             'sex': user.sex,
         }
-        return JsonResponse({'errno': 0, 'data': data})
+        return JsonResponse({'errno': 0, 'user': data})
 
     def post(self, request):
         email = request.session.get('email')
