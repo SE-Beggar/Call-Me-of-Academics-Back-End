@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from paper.documents import PaperDocument, AuthorDocument, VenueDocument
-from paper.serializers import PaperSerializer, AuthorSerializer, VenueSerializer, VenueDetailSerializer, PubSerializer
+from paper.serializers import PaperSerializer, AuthorSerializer, VenueSerializer, VenueDetailSerializer, PubSerializer, \
+    AuthorSearchSerializer
 
 
 class IndexView(APIView):
@@ -61,7 +62,7 @@ class SearchAuthorView(APIView):
         search = AuthorDocument.search()[0:500].query(q)
         response = search.execute()
         print('HitNum:', len(response.hits))
-        serializer = AuthorSerializer(instance=response.hits, many=True)
+        serializer = AuthorSearchSerializer(instance=response.hits, many=True)
         return Response({'errno': 0,'scholars': serializer.data})
 
 

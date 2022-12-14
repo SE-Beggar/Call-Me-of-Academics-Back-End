@@ -124,6 +124,26 @@ class AuthorSerializer(DocumentSerializer):
         fields = '__all__'
 
 
+class AuthorSearchSerializer(DocumentSerializer):
+    orgs = serializers.CharField(required=False)
+    position = serializers.CharField(required=False)
+    n_citation = serializers.IntegerField(required=False)
+    n_pubs = serializers.IntegerField(required=False)
+    tags = serializers.ObjectField(required=False)
+    from rest_framework import serializers
+    isidentify = serializers.SerializerMethodField()
+
+    def get_isidentify(self, obj):
+        if User.objects.filter(author_id=obj.id):
+            return 1
+        else:
+            return 0
+
+    class Meta:
+        document = AuthorDocument
+        fields = '__all__'
+
+
 class VenueSerializer(DocumentSerializer):
     class Meta:
         document = VenueDocument
