@@ -103,29 +103,36 @@ class AdvancedSearchView(APIView):
         must = []
         should = []
         for i in range(0, int(l)):
-            if data['advancecontent[%d][logic]' % i]:
-                if data['advancecontent[%d][entry]' % i] == 0:
+            print(i)
+            if data['advancecontent[%d][logic]' % i] == '1':
+                if data['advancecontent[%d][entry]' % i] == "0":
                     should.append(Q('match', title=data['advancecontent[%d][input]' % i]))
-                elif data['advancecontent[%d][entry]'] == 1:
+                elif data['advancecontent[%d][entry]' % i] == "1":
                     should.append(Q('match', abstract=data['advancecontent[%d][input]' % i]))
-                elif data['advancecontent[%d][entry]'] == 2:
-                    should.append(Q('match', **{'author.name': data['advancecontent[%d][input]' % i]}))
-                elif data['advancecontent[%d][entry]'] == 3:
-                    should.append(Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]}))
+                elif data['advancecontent[%d][entry]' % i] == "3":
+                    should.append(Q('nested', path='authors', query=Q('match', **{'authors.name': data['advancecontent[%d][input]' % i]})))
+                elif data['advancecontent[%d][entry]' % i] == "2":
+                    should.append(Q('nested', path='venue', query=Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]})))
             else:
-                if data['advancecontent[%d][entry]'] == 0:
-                    should.append(Q('match', title=data['advancecontent[%d][input]' % i]))
-                elif data['advancecontent[%d][entry]'] == 1:
-                    should.append(Q('match', abstract=data['advancecontent[%d][input]' % i]))
-                elif data['advancecontent[%d][entry]'] == 2:
-                    should.append(Q('match', **{'author.name': data['advancecontent[%d][input]' % i]}))
-                elif data['advancecontent[%d][entry]'] == 3:
-                    should.append(Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]}))
-            search = PaperDocument.search()[0:100].query('bool', must=must, should=should)
-            response = search.execute()
-            print('HitNum:', len(response.hits))
-            serializer = PaperSerializer(instance=response.hits, many=True)
-            return Response({'errno': 0,'papers': serializer.data})
+                print("fnasiojnfaio")
+                if data['advancecontent[%d][entry]' % i] == "0":
+                    must.append(Q('match', title=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]' % i] == "1":
+                    must.append(Q('match', abstract=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]' % i] == "3":
+                    must.append(Q('nested', path='authors',
+                                    query=Q('match', **{'authors.name': data['advancecontent[%d][input]' % i]})))
+                elif data['advancecontent[%d][entry]' % i] == "2":
+                    must.append(Q('nested', path='venue', query=Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]})))
+        search = PaperDocument.search()[0:500].query('bool', must=must, should=should)
+        response = search.execute()
+        print('HitNum:', len(response.hits))
+        serializer = PaperSerializer(instance=response.hits, many=True)
+        print(must)
+        print(should)
+        print(int(l))
+        print(data['advancecontent[0][input]'])
+        return Response({'errno': 0,'papers': serializer.data})
 
 
 class AuthorDetailView(APIView):
@@ -135,6 +142,7 @@ class AuthorDetailView(APIView):
         response = search.execute()
 
         print(response.hits)
+        print(AuthorSerializer(instance=response.hits[0]).data.get('user'))
         return Response({'errno': 0, 'scholar': AuthorSerializer(instance=response.hits[0]).data})
 
 
@@ -166,7 +174,7 @@ class VenueSearchView(APIView):
         if request.data.get('name'):
             venue_name = request.data.get('name')
             q = Q('multi_match', query=venue_name, fields=['DisplayName', 'NormalizedName'])
-            search = VenueDocument.search()[0:500].query(q)
+            search = VenueDocument.search()[0:100].query(q)
             response = search.execute()
             print('HitNum:', len(response.hits))
             serializer = VenueSerializer(instance=response.hits, many=True)
@@ -182,7 +190,7 @@ class VenueSearchView(APIView):
 class VenueDetailView(APIView):
     def get(self, request):
         venue_id = request.query_params.get('id')
-        search = VenueDocument.search()[0:500].filter('term', id=venue_id)
+        search = VenueDocument.search()[0:50].filter('term', id=venue_id)
         response = search.execute()
         return Response({'errno': 0, 'venue': VenueDetailSerializer(instance=response.hits[0]).data})
 

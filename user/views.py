@@ -123,6 +123,7 @@ class InfoView(APIView):
 
     def get(self, request):
         email = request.session.get('email')
+        print(email)
         user = User.objects.get(email=email)
         data = {
             'email': user.email,
@@ -191,7 +192,8 @@ class IdentifyView(APIView):
     def post(self, request):
         application_id = request.data.get('listid')
         op = request.data.get('op')
-        if op:
+        print(request.data)
+        if op == "1":
             application = Application.objects.get(pk=application_id)
             application.delete()
         else:

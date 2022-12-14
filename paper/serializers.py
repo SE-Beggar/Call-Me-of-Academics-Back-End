@@ -84,6 +84,18 @@ class AuthorSerializer(DocumentSerializer):
     pubs = serializers.SerializerMethodField()
     #n_download = serializers.SerializerMethodField()
     isidentify = serializers.SerializerMethodField()
+    user = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        if not User.objects.filter(author_id=obj.id).exists():
+            return None
+        else:
+            user = User.objects.get(author_id=obj.id)
+            return {
+                'username': user.username,
+                'email': user.email,
+                'description': user.description
+            }
 
     def get_pubs(self, obj):
         # print('get_pubs')
