@@ -8,7 +8,8 @@ class User(models.Model):
     password = models.CharField(max_length=100)
     description = models.CharField(max_length=250)
     sex = models.CharField(max_length=5, default='秘密')
-    author_id = models.CharField(max_length=25, default=None)
+    author_id = models.CharField(max_length=25, default="")
+    isadmin = models.BooleanField(default=False)
 
 
 def application_path(instance, filename):
