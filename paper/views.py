@@ -56,7 +56,7 @@ class SearchPaperView(APIView):
         else:
             lang_selected = data.get('langSelected', None)
             year_selected = data.get('yearSelected', None)
-            search = PaperDocument.search()[0:500].query('match_all').sort('-n_citation')
+            search = PaperDocument.search()[0:100].query('match_all').sort('-n_citation')
             if lang_selected:
                 search = search.filter('term', lang=lang_selected)
             if year_selected:
@@ -96,29 +96,30 @@ class SearchAuthorView(APIView):
 
 class AdvancedSearchView(APIView):
     def post(self, request):
-        content = request.data['advancecontent']
+        data = request.data
+        l = len(data) / 3
         must = []
         should = []
-        for item in content:
-            if item['logic']:
-                if item['entry'] == 0:
-                    should.append(Q('match', title=item['input']))
-                elif item['entry'] == 1:
-                    should.append(Q('match', abstract=item['input']))
-                elif item['entry'] == 2:
-                    should.append(Q('match', **{'author.name': item['input']}))
-                elif item['entry'] == 3:
-                    should.append(Q('match', **{'venue.raw': item['input']}))
+        for i in range(0, int(l)):
+            if data['advancecontent[%d][logic]' % i]:
+                if data['advancecontent[%d][entry]' % i] == 0:
+                    should.append(Q('match', title=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]'] == 1:
+                    should.append(Q('match', abstract=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]'] == 2:
+                    should.append(Q('match', **{'author.name': data['advancecontent[%d][input]' % i]}))
+                elif data['advancecontent[%d][entry]'] == 3:
+                    should.append(Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]}))
             else:
-                if item['entry'] == 0:
-                    should.append(Q('match', title=item['input']))
-                elif item['entry'] == 1:
-                    should.append(Q('match', abstract=item['input']))
-                elif item['entry'] == 2:
-                    should.append(Q('match', **{'author.name': item['input']}))
-                elif item['entry'] == 3:
-                    should.append(Q('match', **{'venue.raw': item['input']}))
-            search = PaperDocument.search()[0:500].query('bool', must=must, should=should)
+                if data['advancecontent[%d][entry]'] == 0:
+                    should.append(Q('match', title=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]'] == 1:
+                    should.append(Q('match', abstract=data['advancecontent[%d][input]' % i]))
+                elif data['advancecontent[%d][entry]'] == 2:
+                    should.append(Q('match', **{'author.name': data['advancecontent[%d][input]' % i]}))
+                elif data['advancecontent[%d][entry]'] == 3:
+                    should.append(Q('match', **{'venue.raw': data['advancecontent[%d][input]' % i]}))
+            search = PaperDocument.search()[0:100].query('bool', must=must, should=should)
             response = search.execute()
             print('HitNum:', len(response.hits))
             serializer = PaperSerializer(instance=response.hits, many=True)
@@ -169,7 +170,7 @@ class VenueSearchView(APIView):
             serializer = VenueSerializer(instance=response.hits, many=True)
             return Response({'errno': 0, 'venues': serializer.data})
         else:
-            search = VenueDocument.search()[0:500].query('match_all')
+            search = VenueDocument.search()[0:100].query('match_all')
             response = search.execute()
             print('HitNum:', len(response.hits))
             serializer = VenueSerializer(instance=response.hits, many=True)
