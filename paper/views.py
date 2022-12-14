@@ -28,46 +28,70 @@ class PaperDetailView(APIView):
 class SearchPaperView(APIView):
     def post(self, request):
         data = request.data
-        q = Q('multi_match', query=data['title'],
-              fields=[
-                  'title',
-                  'authors.name',
-                  'venue.raw',
-                  'publisher',
-                  'abstract',
-                  'keywords'
-              ])
-        lang_selected = data.get('langSelected', None)
-        year_selected = data.get('yearSelected', None)
-        search = PaperDocument.search(index='paper')[0:500].query(q)
-        if lang_selected:
-            search = search.filter('term', lang=lang_selected)
-        if year_selected:
-            if year_selected == '2010及更早':
-                search = search.filter('range', year={'lte': 2010})
-            else:
-                search = search.filter('term', year=int(year_selected))
-                print(search.to_dict())
-        response = search.execute()
-        print('HitNum:', len(response.hits))
-        serializer = PaperSerializer(instance=response.hits, many=True)
-        return Response({'errno': 0,'papers': serializer.data})
+        if data['title']:
+            q = Q('multi_match', query=data['title'],
+                  fields=[
+                      'title',
+                      'authors.name',
+                      'venue.raw',
+                      'publisher',
+                      'abstract',
+                      'keywords'
+                  ])
+            lang_selected = data.get('langSelected', None)
+            year_selected = data.get('yearSelected', None)
+            search = PaperDocument.search(index='paper')[0:500].query(q)
+            if lang_selected:
+                search = search.filter('term', lang=lang_selected)
+            if year_selected:
+                if year_selected == '2010及更早':
+                    search = search.filter('range', year={'lte': 2010})
+                else:
+                    search = search.filter('term', year=int(year_selected))
+                    print(search.to_dict())
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = PaperSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0,'papers': serializer.data})
+        else:
+            lang_selected = data.get('langSelected', None)
+            year_selected = data.get('yearSelected', None)
+            search = PaperDocument.search()[0:500].query('match_all').sort('-n_citation')
+            if lang_selected:
+                search = search.filter('term', lang=lang_selected)
+            if year_selected:
+                if year_selected == '2010及更早':
+                    search = search.filter('range', year={'lte': 2010})
+                else:
+                    search = search.filter('term', year=int(year_selected))
+                    print(search.to_dict())
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = PaperSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0, 'papers': serializer.data})
 
 
 class SearchAuthorView(APIView):
     def post(self, request):
         data = request.data
-        q = Q('multi_match', query=data['scholar'],
-              fields=[
-                  'name',
-                  'orgs',
-                  'tags.t'
-              ])
-        search = AuthorDocument.search()[0:20].query(q)
-        response = search.execute()
-        print('HitNum:', len(response.hits))
-        serializer = AuthorSearchSerializer(instance=response.hits, many=True)
-        return Response({'errno': 0,'scholars': serializer.data})
+        if data['scholar']:
+            q = Q('multi_match', query=data['scholar'],
+                  fields=[
+                      'name',
+                      'orgs',
+                      'tags.t'
+                  ])
+            search = AuthorDocument.search()[0:100].query(q)
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = AuthorSearchSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0,'scholars': serializer.data})
+        else:
+            search = AuthorDocument.search()[0:100].query('match_all').sort('-h_index')
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = AuthorSearchSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0, 'scholars': serializer.data})
 
 
 class AdvancedSearchView(APIView):
@@ -136,13 +160,20 @@ class AuthorRelationshipView(APIView):
 
 class VenueSearchView(APIView):
     def post(self, request):
-        venue_name = request.data.get('name')
-        q = Q('multi_match', query=venue_name, fields=['DisplayName', 'NormalizedName'])
-        search = VenueDocument.search()[0:500].query(q)
-        response = search.execute()
-        print('HitNum:', len(response.hits))
-        serializer = VenueSerializer(instance=response.hits, many=True)
-        return Response({'errno': 0, 'venues': serializer.data})
+        if request.data.get('name'):
+            venue_name = request.data.get('name')
+            q = Q('multi_match', query=venue_name, fields=['DisplayName', 'NormalizedName'])
+            search = VenueDocument.search()[0:500].query(q)
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = VenueSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0, 'venues': serializer.data})
+        else:
+            search = VenueDocument.search()[0:500].query('match_all')
+            response = search.execute()
+            print('HitNum:', len(response.hits))
+            serializer = VenueSerializer(instance=response.hits, many=True)
+            return Response({'errno': 0, 'venues': serializer.data})
 
 
 class VenueDetailView(APIView):
