@@ -87,15 +87,15 @@ class AuthorSerializer(DocumentSerializer):
 
     def get_pubs(self, obj):
         # print('get_pubs')
-        print(obj.pubs)
+        #print(obj.pubs)
         ret = []
         for item in obj.pubs:
-            print(item['i'])
-            search = PaperDocument.search()[0:500].filter('term', id=item['i'])
+            #print(item['i'])
+            search = PaperDocument.search().filter('term', id=item['i'])
             response = search.execute()
             dict = item.to_dict()
             dict['r'] += 1
-            print(response.hits)
+            #print(response.hits)
             if response.hits:
                 dict.update(PubSerializer(instance=response.hits[0]).data)
             ret.append(dict)
@@ -104,9 +104,9 @@ class AuthorSerializer(DocumentSerializer):
     def get_n_download(self, obj):
         num = 0
         for item in obj.pubs:
-            search = PaperDocument.search()[0:500].filter('term', id=item['i'])
+            search = PaperDocument.search().filter('term', id=item['i'])
             response = search.execute()
-            print(response.hits)
+            #print(response.hits)
             if response.hits:
                 for paper in response.hits:
                     if paper.n_download:

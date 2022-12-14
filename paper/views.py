@@ -63,7 +63,7 @@ class SearchAuthorView(APIView):
                   'orgs',
                   'tags.t'
               ])
-        search = AuthorDocument.search()[0:500].query(q)
+        search = AuthorDocument.search()[0:20].query(q)
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = AuthorSearchSerializer(instance=response.hits, many=True)
