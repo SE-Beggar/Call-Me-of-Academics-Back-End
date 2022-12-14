@@ -76,7 +76,7 @@ class AuthorSerializer(DocumentSerializer):
     from rest_framework import serializers
     pubs = serializers.SerializerMethodField()
     n_download = serializers.SerializerMethodField()
-    identified = serializers.SerializerMethodField()
+    isidentify = serializers.SerializerMethodField()
 
     def get_pubs(self, obj):
         # print('get_pubs')
@@ -105,7 +105,7 @@ class AuthorSerializer(DocumentSerializer):
                         num += paper.n_download
         return num
 
-    def get_identified(self, obj):
+    def get_isidentify(self, obj):
         if User.objects.filter(author_id=obj.id):
             return 1
         else:

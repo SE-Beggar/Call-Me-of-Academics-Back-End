@@ -20,7 +20,7 @@ class PaperDetailView(APIView):
 class SearchPaperView(APIView):
     def post(self, request):
         data = request.data
-        q = Q('multi_match', query=data['content'],
+        q = Q('multi_match', query=data['title'],
               fields=[
                   'title',
                   'authors.name',

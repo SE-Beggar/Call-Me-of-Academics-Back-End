@@ -27,13 +27,12 @@ class RegisterView(APIView):
         email = request.POST.get('email')
         code = request.POST.get('code')
         username = request.POST.get('username')
-        password_1 = request.POST.get('password_1')
-        password_2 = request.POST.get('password_2')
+        password = request.POST.get('password')
+
         if code != request.session.get('code'):
             return JsonResponse({'errno': 1002})
-        if password_1 != password_2:
-            return JsonResponse({'errno': 1003})
-        password = make_password(password_1)
+
+        password = make_password(password)
         User.objects.create(email=email, username=username, password=password)
         return JsonResponse({'errno': 0})
 
@@ -75,6 +74,48 @@ def logout(request):
     request.session.flush()
     return JsonResponse({'errno': 0, 'msg': "注销成功"})
 
+class FindBackView(APIView):
+    def get(self, request):
+        email = request.GET.get('email')
+        if User.objects.filter(email=email).exists():
+            try:
+                rand_str = self.send_message(email)  # 发送邮件
+                request.session['code'] = rand_str  # 验证码存入session，用于做注册验证
+                return JsonResponse({'errno': 0, 'msg': "发送验证码成功"})
+            except:
+                return JsonResponse({'errno': 2, 'msg': "发送验证码失败"})
+        else:
+            return JsonResponse({'errno': 1, 'msg': "该邮箱未注册"})
+
+    def post(self, request):
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        code = request.POST.get('code')
+        if User.objects.filter(email=email).exists():
+            user = User.objects.get(email=email)
+            password = make_password(password)
+            if code == request.session.get('code'):
+                user.password=password
+                return JsonResponse({'errno': 0, 'msg': "修改成功"})
+            else:
+                return JsonResponse({'errno': 1, 'msg': "验证码不正确"})
+        else:
+            return JsonResponse({'errno': 2, 'msg': "用户不存在"})
+
+
+    def send_message(self, email):
+        import random
+        str1 = '0123456789'
+        rand_str = ''
+        for i in range(0, 6):
+            rand_str += str1[random.randrange(0, len(str1))]
+        message = "您的验证码是" + rand_str + "，10分钟内有效，请尽快填写"
+        print(rand_str)
+        mailBoxes = []
+        mailBoxes.append(email)
+        send_mail('验证码', message, '1030519668@qq.com', mailBoxes, fail_silently=False)
+        return rand_str
+
 
 class InfoView(APIView):
 
@@ -87,7 +128,7 @@ class InfoView(APIView):
             'description': user.description,
             'sex': user.sex,
         }
-        return JsonResponse({'errno': 0, 'data': data})
+        return JsonResponse({'errno': 0, 'user': data, 'isadmin': user.isadmin})
 
     def post(self, request):
         email = request.session.get('email')
@@ -138,7 +179,7 @@ class IdentifyView(APIView):
                 'username': item.user.username,
                 'scholarname': item.author_name,
                 'description': item.description,
-                'url': 'http://127.0.0.1/api/' + str(item.attachment)
+                'url': 'http://127.0.0.1:8000/' + str(item.attachment)
             } for item in Application.objects.all()
         ]
         return Response({'errno': 0, 'lists': lists})
