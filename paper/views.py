@@ -43,8 +43,8 @@ class SearchPaperView(APIView):
         if lang_selected:
             search = search.filter('term', lang=lang_selected)
         if year_selected:
-            if year_selected == '2015及更早':
-                search = search.filter('range', year={'lte': 2015})
+            if year_selected == '2010及更早':
+                search = search.filter('range', year={'lte': 2010})
             else:
                 search = search.filter('term', year=int(year_selected))
                 print(search.to_dict())
