@@ -37,13 +37,17 @@ class SearchPaperView(APIView):
                   'abstract',
                   'keywords'
               ])
-        type_selected = data.get('typeSelected', None)
+        lang_selected = data.get('langSelected', None)
         year_selected = data.get('yearSelected', None)
-        search = PaperDocument.search(index='paper')[0:100].query(q)
-        if type_selected:
-            search = search.filter('terms', doc_type=type_selected)
+        search = PaperDocument.search(index='paper')[0:500].query(q)
+        if lang_selected:
+            search = search.filter('term', lang=lang_selected)
         if year_selected:
-            search = search.filter('terms', year=year_selected)
+            if year_selected == '2015及更早':
+                search = search.filter('range', year={'lte': 2015})
+            else:
+                search = search.filter('term', year=int(year_selected))
+                print(search.to_dict())
         response = search.execute()
         print('HitNum:', len(response.hits))
         serializer = PaperSerializer(instance=response.hits, many=True)
